@@ -2,17 +2,23 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 
+function parseOrigins(env?: string): (string | RegExp)[] | true {
+  if (!env) return true; 
+  const list = env
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
+  return list.length ? list : true;
+}
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // CORS (при необходимости поменяй origin на свой фронтенд/окружение)
   app.enableCors({
-    origin: ['http://localhost:3000'],
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    origin: parseOrigins(process.env.CORS_ORIGINS),
     credentials: true,
   });
 
-  // Валидация DTO
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -21,7 +27,8 @@ async function bootstrap() {
     }),
   );
 
-  const port = process.env.PORT ? Number(process.env.PORT) : 3001;
-  await app.listen(port, '0.0.0.0');
+  const port = Number(process.env.PORT ?? 3001);
+  await app.listen(port, '0.0.0.0'); 
 }
+
 bootstrap();
